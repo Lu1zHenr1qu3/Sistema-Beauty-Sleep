@@ -365,7 +365,7 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
   // Memoizar exames de sono e cálculos de ordenação
   const dadosPiorMelhor = useMemo(() => {
     const examesSono = exames.filter(e => e.tipo === 1)
-    if (examesSono.length === 0) return null
+    if (examesSono.length === 0) return []
 
     const metricasSono = [
       { 
@@ -458,7 +458,7 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
         pior: ordenados[0],
         melhor: ordenados[ordenados.length - 1]
       }
-    }).filter(Boolean)
+    }).filter((item): item is NonNullable<typeof item> => item !== null)
   }, [exames])
 
   if (isLoading) {
@@ -685,7 +685,7 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
       )}
 
       {/* Seção: Resumo Pior/Melhor - Exames de Sono (Compacta) */}
-      {dadosPiorMelhor && dadosPiorMelhor.length > 0 && (
+      {dadosPiorMelhor.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>
