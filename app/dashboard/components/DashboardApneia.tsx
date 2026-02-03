@@ -109,12 +109,12 @@ export default function DashboardApneia({ userRole }: DashboardApneiaProps) {
           spo2Medio,
         })
 
-        // Distribuição de IDO por categoria
+        // Distribuição de IDO por categoria - sempre mostrar todas as categorias
         const distribuicaoData: DistribuicaoIDO[] = [
-          { name: 'Normal (0)', value: 0, color: '#22c55e' }, // success-500
-          { name: 'Leve (1)', value: 0, color: '#f59e0b' }, // warning-500
-          { name: 'Moderado (2)', value: 0, color: '#f97316' }, // orange-500
-          { name: 'Acentuado (3)', value: 0, color: '#ef4444' }, // danger-500
+          { name: 'Normal', value: 0, color: '#22c55e' }, // success-500
+          { name: 'Leve', value: 0, color: '#f59e0b' }, // warning-500
+          { name: 'Moderado', value: 0, color: '#f97316' }, // orange-500
+          { name: 'Acentuado', value: 0, color: '#ef4444' }, // danger-500
         ]
 
         exames.forEach((exame: any) => {
@@ -266,23 +266,32 @@ export default function DashboardApneia({ userRole }: DashboardApneiaProps) {
         {/* Distribuição de IDO */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribuição por Categoria IDO</h3>
-          {distribuicao.some((d) => d.value > 0) ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={distribuicao}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" name="Quantidade">
-                  {distribuicao.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-500 text-center py-8">Sem dados para exibir</p>
-          )}
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={distribuicao}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis allowDecimals={false} />
+              <Tooltip 
+                formatter={(value: number) => [`${value} exames`, 'Quantidade']}
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                }}
+              />
+              <Bar dataKey="value" name="Quantidade">
+                {distribuicao.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Tendência de IDO e SpO2 */}

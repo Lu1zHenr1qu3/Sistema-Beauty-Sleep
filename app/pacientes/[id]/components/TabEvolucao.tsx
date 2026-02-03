@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { TrendingUp, TrendingDown, CheckCircle, XCircle, Calendar, Filter, AlertCircle, BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -97,13 +97,7 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ido')
   const [sessoesCount, setSessoesCount] = useState(0)
 
-  useEffect(() => {
-    fetchExames()
-    fetchSessoes()
-    fetchSessoesCount()
-  }, [pacienteId, dateRange])
-
-  const fetchExames = async () => {
+  const fetchExames = useCallback(async () => {
     try {
       setIsLoading(true)
       const supabase = createClient()
@@ -143,9 +137,9 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pacienteId, dateRange])
 
-  const fetchSessoes = async () => {
+  const fetchSessoes = useCallback(async () => {
     try {
       const supabase = createClient()
       const { data, error } = await supabase
@@ -163,9 +157,9 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
     } catch (error) {
       console.error('Erro ao buscar sessões:', error)
     }
-  }
+  }, [pacienteId])
 
-  const fetchSessoesCount = async () => {
+  const fetchSessoesCount = useCallback(async () => {
     try {
       const supabase = createClient()
       const { count, error } = await supabase
@@ -179,10 +173,16 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
     } catch (error) {
       console.error('Erro ao contar sessões:', error)
     }
-  }
+  }, [pacienteId])
 
-  // Preparar dados para gráficos
-  const prepareChartData = () => {
+  useEffect(() => {
+    fetchExames()
+    fetchSessoes()
+    fetchSessoesCount()
+  }, [fetchExames, fetchSessoes, fetchSessoesCount])
+
+  // Preparar dados para gráficos (memoizado)
+  const chartData = useMemo(() => {
     return exames.map((exame) => {
       // Fix timezone issue: parse date as local date, not UTC
       const [year, month, day] = exame.data_exame.split('-').map(Number)
@@ -222,39 +222,44 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
         bpmMax: exame.bpm_max,
       }
     })
-  }
+  }, [exames])
 
-  const chartData = prepareChartData()
+  // Obter métrica selecionada (memoizado)
+  const selectedMetricConfig = useMemo(() => 
+    METRICS.find(m => m.key === selectedMetric) || METRICS[1],
+    [selectedMetric]
+  )
 
-  // Obter métrica selecionada
-  const selectedMetricConfig = METRICS.find(m => m.key === selectedMetric) || METRICS[1]
-
-  // Filtrar dados para a métrica selecionada
-  const filteredChartData = chartData.filter((d) => {
+  // Filtrar dados para a métrica selecionada (memoizado)
+  const filteredChartData = useMemo(() => {
+    return chartData.filter((d) => {
     const value = d[selectedMetricConfig.dataKey as keyof typeof d]
     if (value === null || value === undefined) return false
     
-    // Filtrar por tipo de exame se necessário
-    if (selectedMetricConfig.filterType !== undefined) {
-      return d.tipo === selectedMetricConfig.filterType
-    }
-    
-    return true
-  })
+      // Filtrar por tipo de exame se necessário
+      if (selectedMetricConfig.filterType !== undefined) {
+        return d.tipo === selectedMetricConfig.filterType
+      }
+      
+      return true
+    })
+  }, [chartData, selectedMetricConfig])
 
-  // Preparar marcadores de sessões (formato de data para corresponder ao XAxis)
-  const sessionMarkers = sessoes.map((sessao) => {
+  // Preparar marcadores de sessões (memoizado)
+  const sessionMarkers = useMemo(() => {
+    return sessoes.map((sessao) => {
     // Fix timezone issue: parse date as local date, not UTC
     const [year, month, day] = sessao.data_sessao.split('-').map(Number)
     const dataSessao = new Date(year, month - 1, day) // month is 0-indexed
-    return dataSessao.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
+      return dataSessao.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+      })
     })
-  })
+  }, [sessoes])
 
-  // Calcular comparação Primeiro vs Último
-  const calcularComparacao = (): ComparacaoMetrica[] => {
+  // Calcular comparação Primeiro vs Último (memoizado)
+  const comparacoes = useMemo((): ComparacaoMetrica[] => {
     if (exames.length < 2) return []
 
     const primeiroExame = exames[0]
@@ -311,21 +316,150 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
     }
 
     return comparacoes
+  }, [exames])
+
+  // Verificar se está respondendo ao tratamento (memoizado)
+  const estaRespondendo = useMemo(() => {
+    const melhoriasSignificativas = comparacoes.filter(
+      (c) => c.mudancaPercentual !== null && Math.abs(c.mudancaPercentual) >= 20 && c.melhorou
+    )
+    return melhoriasSignificativas.length > 0
+  }, [comparacoes])
+
+  // Verificar se não está respondendo (memoizado)
+  const naoEstaRespondendo = useMemo(() => {
+    return sessoesCount >= 5 &&
+      comparacoes.length > 0 &&
+      comparacoes.every((c) => c.mudancaPercentual === null || Math.abs(c.mudancaPercentual) < 20 || !c.melhorou)
+  }, [sessoesCount, comparacoes])
+
+  // Filtrar métricas disponíveis baseado nos tipos de exames disponíveis (memoizado)
+  // DEVE estar antes dos early returns para manter a ordem dos hooks
+  const availableMetrics = useMemo(() => {
+    return METRICS.filter((metric) => {
+      if (metric.filterType === undefined) return true
+      return exames.some((e) => e.tipo === metric.filterType)
+    })
+  }, [exames])
+
+  // Se a métrica selecionada não está disponível, selecionar a primeira disponível
+  useEffect(() => {
+    if (!availableMetrics.find(m => m.key === selectedMetric)) {
+      if (availableMetrics.length > 0 && selectedMetric !== availableMetrics[0].key) {
+        setSelectedMetric(availableMetrics[0].key as MetricKey)
+      }
+    }
+  }, [availableMetrics, selectedMetric])
+
+  // Função auxiliar para formatar data (memoizada fora do render)
+  const formatarData = (dataStr: string) => {
+    const [year, month, day] = dataStr.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
   }
 
-  const comparacoes = calcularComparacao()
+  // Memoizar exames de sono e cálculos de ordenação
+  const dadosPiorMelhor = useMemo(() => {
+    const examesSono = exames.filter(e => e.tipo === 1)
+    if (examesSono.length === 0) return null
 
-  // Verificar se está respondendo ao tratamento
-  const melhoriasSignificativas = comparacoes.filter(
-    (c) => c.mudancaPercentual !== null && Math.abs(c.mudancaPercentual) >= 20 && c.melhorou
-  )
-  const estaRespondendo = melhoriasSignificativas.length > 0
+    const metricasSono = [
+      { 
+        key: 'ido', 
+        label: 'IDO', 
+        unit: '/hora', 
+        getValue: (e: Exame) => e.ido,
+        menorMelhor: true,
+      },
+      { 
+        key: 'spo2_min', 
+        label: 'SpO2 Mínima', 
+        unit: '%', 
+        getValue: (e: Exame) => e.spo2_min,
+        menorMelhor: false,
+      },
+      { 
+        key: 'tempo_spo2_90', 
+        label: 'Tempo com SpO2 < 90%', 
+        unit: '%', 
+        getValue: (e: Exame) => {
+          if (!e.duracao_total_seg || !e.tempo_spo2_90_seg) return null
+          return (e.tempo_spo2_90_seg / e.duracao_total_seg) * 100
+        },
+        menorMelhor: true,
+      },
+      { 
+        key: 'num_dessaturacoes', 
+        label: 'Número de Dessaturações', 
+        unit: '#', 
+        getValue: (e: Exame) => e.num_dessaturacoes,
+        menorMelhor: true,
+      },
+      { 
+        key: 'num_eventos_hipoxemia', 
+        label: 'Número de Eventos de Hipoxemia', 
+        unit: '#', 
+        getValue: (e: Exame) => e.num_eventos_hipoxemia,
+        menorMelhor: true,
+      },
+      { 
+        key: 'tempo_hipoxemia', 
+        label: 'Tempo Total em Hipoxemia', 
+        unit: 'min', 
+        getValue: (e: Exame) => e.tempo_hipoxemia_seg ? e.tempo_hipoxemia_seg / 60 : null,
+        menorMelhor: true,
+      },
+      { 
+        key: 'carga_hipoxica', 
+        label: 'Carga Hipóxica', 
+        unit: '%.min/hora', 
+        getValue: (e: Exame) => e.carga_hipoxica,
+        menorMelhor: true,
+      },
+      { 
+        key: 'spo2_avg', 
+        label: 'SpO2 Média', 
+        unit: '%', 
+        getValue: (e: Exame) => e.spo2_avg,
+        menorMelhor: false,
+      },
+    ]
 
-  // Verificar se não está respondendo (melhoria < 20% após 5+ sessões)
-  const naoEstaRespondendo =
-    sessoesCount >= 5 &&
-    comparacoes.length > 0 &&
-    comparacoes.every((c) => c.mudancaPercentual === null || Math.abs(c.mudancaPercentual) < 20 || !c.melhorou)
+    return metricasSono.map((metrica) => {
+      const examesComValor = examesSono
+        .map(e => ({
+          exame: e,
+          valor: metrica.getValue(e),
+          dataExame: e.data_exame
+        }))
+        .filter(item => item.valor !== null && item.valor !== undefined)
+        .map(item => ({
+          ...item,
+          valor: item.valor as number
+        }))
+
+      if (examesComValor.length === 0) return null
+
+      const ordenados = [...examesComValor].sort((a, b) => {
+        if (metrica.menorMelhor) {
+          return b.valor - a.valor
+        } else {
+          return a.valor - b.valor
+        }
+      })
+
+      return {
+        metrica,
+        ordenados,
+        pior: ordenados[0],
+        melhor: ordenados[ordenados.length - 1]
+      }
+    }).filter(Boolean)
+  }, [exames])
 
   if (isLoading) {
     return (
@@ -355,19 +489,6 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
         </CardContent>
       </Card>
     )
-  }
-
-  // Filtrar métricas disponíveis baseado nos tipos de exames disponíveis
-  const availableMetrics = METRICS.filter((metric) => {
-    if (metric.filterType === undefined) return true
-    return exames.some((e) => e.tipo === metric.filterType)
-  })
-
-  // Se a métrica selecionada não está disponível, selecionar a primeira disponível
-  if (!availableMetrics.find(m => m.key === selectedMetric)) {
-    if (availableMetrics.length > 0 && selectedMetric !== availableMetrics[0].key) {
-      setSelectedMetric(availableMetrics[0].key as MetricKey)
-    }
   }
 
   return (
@@ -421,20 +542,37 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {availableMetrics.map((metric) => (
-              <Button
+              <button
                 key={metric.key}
-                variant={selectedMetric === metric.key ? 'primary' : 'outline'}
-                size="sm"
                 onClick={() => setSelectedMetric(metric.key)}
-                className="justify-start text-left h-auto py-2 px-3"
+                className={`
+                  relative flex flex-col items-start justify-start p-3 rounded-lg border-2 transition-all
+                  text-left h-auto min-h-[60px]
+                  ${
+                    selectedMetric === metric.key
+                      ? 'border-primary-500 bg-primary-50 shadow-sm'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                  }
+                `}
               >
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium">{metric.label}</span>
-                  <span className="text-xs text-gray-500">{metric.unit}</span>
-                </div>
-              </Button>
+                <span className={`text-sm font-semibold leading-tight mb-1 ${
+                  selectedMetric === metric.key ? 'text-primary-900' : 'text-gray-900'
+                }`}>
+                  {metric.label}
+                </span>
+                <span className={`text-xs ${
+                  selectedMetric === metric.key ? 'text-primary-600' : 'text-gray-500'
+                }`}>
+                  {metric.unit}
+                </span>
+                {selectedMetric === metric.key && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 rounded-full bg-primary-500" />
+                  </div>
+                )}
+              </button>
             ))}
           </div>
         </CardContent>
@@ -541,6 +679,66 @@ export default function TabEvolucao({ pacienteId }: TabEvolucaoProps) {
               <p className="mt-1 text-sm text-gray-500">
                 Não há dados disponíveis para a métrica selecionada no período escolhido.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Seção: Resumo Pior/Melhor - Exames de Sono (Compacta) */}
+      {dadosPiorMelhor && dadosPiorMelhor.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Evolução das Métricas de Sono: Pior para Melhor
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {dadosPiorMelhor.map(({ metrica, pior, melhor }) => {
+                // Calcular porcentagem de melhora/piora
+                const diferenca = melhor.valor - pior.valor
+                const porcentagem = pior.valor !== 0 
+                  ? ((diferenca / pior.valor) * 100) 
+                  : diferenca !== 0 ? (diferenca > 0 ? 100 : -100) : 0
+                const melhorou = metrica.menorMelhor 
+                  ? diferenca < 0  // Para métricas onde menor é melhor, diferença negativa = melhora
+                  : diferenca > 0  // Para métricas onde maior é melhor, diferença positiva = melhora
+
+                return (
+                  <div 
+                    key={metrica.key} 
+                    className="border border-gray-200 rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-gray-900">{metrica.label}</h4>
+                      <span className="text-xs text-gray-500 ml-2">{metrica.unit}</span>
+                    </div>
+                    
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Pior:</span>
+                        <span className="font-medium text-red-700">
+                          {pior.valor.toFixed(metrica.unit === '#' ? 0 : 2)} {metrica.unit}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Melhor:</span>
+                        <span className="font-medium text-green-700">
+                          {melhor.valor.toFixed(metrica.unit === '#' ? 0 : 2)} {metrica.unit}
+                        </span>
+                      </div>
+                      <div className="pt-1.5 border-t border-gray-200 flex items-center justify-between">
+                        <span className="text-gray-600">Evolução:</span>
+                        <span className={`font-semibold ${
+                          melhorou ? 'text-green-700' : 'text-red-700'
+                        }`}>
+                          {melhorou ? '↑' : '↓'} {Math.abs(porcentagem).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
