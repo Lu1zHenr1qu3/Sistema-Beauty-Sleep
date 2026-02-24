@@ -108,6 +108,10 @@ export interface DashboardAdminTemplateProps {
    */
   userRole?: 'admin' | 'equipe' | 'recepcao' | string | null
   /**
+   * Optional subtitle/description below the page title
+   */
+  description?: string
+  /**
    * Additional class name
    */
   className?: string
@@ -139,6 +143,7 @@ export interface DashboardAdminTemplateProps {
  */
 export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
   title = 'Dashboard',
+  description,
   userName,
   userAvatar,
   userEmail,
@@ -221,12 +226,12 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
   
   const containerStyle: React.CSSProperties = {
     backgroundImage,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
     minHeight: '100vh',
-      }
+  }
 
   return (
     <div 
@@ -438,26 +443,43 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
         {/* Top Bar - com arredondamento apenas embaixo e estilo glass */}
         <header className="h-16 sticky top-0 z-50 w-full px-4 md:px-6">
           <div className="h-full w-full rounded-b-xl border-b border-white/20 bg-white/10 backdrop-blur-lg relative" style={{ pointerEvents: 'none' }}>
-            <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 h-full gap-2 relative" style={{ pointerEvents: 'auto' }}>
-                {/* Lado esquerdo - título (mobile) */}
-              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 min-w-0 md:hidden">
-                <h1 className="text-xl font-bold text-white">{title}</h1>
+            <div
+              className={cn(
+                "flex items-center pl-8 pr-4 md:pl-12 md:pr-8 h-full gap-2 relative md:grid md:gap-2",
+                isCollapsed
+                  ? "md:grid-cols-[1fr_minmax(0,48rem)_1fr]"
+                  : "md:grid-cols-[1fr_minmax(0,34rem)_1fr]"
+              )}
+              style={{
+                pointerEvents: 'auto',
+                transition: 'grid-template-columns 0.3s ease-in-out',
+              }}
+            >
+                {/* Lado esquerdo - título só no mobile */}
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <h1 className="text-xl font-bold text-white md:hidden">{title}</h1>
                 </div>
                 
-                {/* Busca Global - hidden on mobile, visible on desktop - centralizada no header */}
+                {/* Busca Global - centralizada, mesma largura do conteúdo; reduz com sidebar aberta; animação */}
                 {searchComponent && (
-                <div className="hidden md:flex flex-1 items-center justify-center min-w-0 max-w-2xl mx-4">
-                  <div className="w-full max-w-md">
-                      {searchComponent}
-                    </div>
+                <div className="hidden md:flex items-center min-w-0">
+                  <div
+                    className={cn(
+                      "w-full min-w-0 mr-8 transition-[max-width] duration-300 ease-in-out",
+                      isCollapsed ? "max-w-[48rem]" : "max-w-[34rem]"
+                    )}
+                  >
+                    {searchComponent}
                   </div>
+                </div>
                 )}
                 
-                {/* Lado direito - notificações e menu do usuário */}
-              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 relative z-[10000] min-w-0" data-user-menu style={{ pointerEvents: 'auto' }}>
-                {/* Centro de Notificações */}
-                <NotificationCenter />
-                  <div className="relative">
+                {/* Lado direito - notificação e perfil */}
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 justify-end pl-4 relative z-[10000]" data-user-menu style={{ pointerEvents: 'auto' }}>
+                <div className="shrink-0 ml-24">
+                  <NotificationCenter />
+                </div>
+                <div className="relative">
                     <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -505,7 +527,7 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
           {/* Title and Description */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold font-heading text-white">{title}</h1>
-            <p className="mt-2 text-white/90">Visão geral do sistema Beauty Sleep</p>
+            <p className="mt-2 text-white/90">{description ?? 'Vis\u00E3o geral do sistema Beauty Sleep'}</p>
           </div>
           
           {/* Metrics Grid */}

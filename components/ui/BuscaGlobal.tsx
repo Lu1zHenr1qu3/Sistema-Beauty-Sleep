@@ -183,7 +183,7 @@ export default function BuscaGlobal() {
   }
 
   return (
-    <div className="relative flex-1 max-w-md mx-4">
+    <div className="relative w-full">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
         <input
@@ -214,7 +214,7 @@ export default function BuscaGlobal() {
         {/* Atalho de teclado hint */}
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none hidden md:flex items-center gap-1 text-xs text-gray-400">
           <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">
-            {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}
+            {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}
           </kbd>
           <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">K</kbd>
         </div>

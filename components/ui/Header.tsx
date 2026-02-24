@@ -113,10 +113,20 @@ export default function Header({ userRole, onMenuToggle, isMobileMenuOpen }: Hea
       "h-16 sticky top-0 z-[100] w-full px-4 md:px-6"
     )}>
       <div className="h-full w-full rounded-b-xl border-b border-white/20 bg-white/10 backdrop-blur-lg relative" style={{ pointerEvents: 'none' }}>
-        <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 h-full gap-2 relative z-10" style={{ pointerEvents: 'auto' }}>
-          {/* Lado esquerdo - botão hamburger (mobile) e logo mobile */}
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 min-w-0">
-            {/* Hamburger menu button - only visible on mobile */}
+        <div
+          className={cn(
+            "flex items-center pl-8 pr-4 md:pl-12 md:pr-8 h-full gap-2 relative z-10 md:grid md:gap-2",
+            isCollapsed
+              ? "md:grid-cols-[1fr_minmax(0,48rem)_1fr]"
+              : "md:grid-cols-[1fr_minmax(0,34rem)_1fr]"
+          )}
+          style={{
+            pointerEvents: 'auto',
+            transition: 'grid-template-columns 0.3s ease-in-out',
+          }}
+        >
+          {/* Lado esquerdo */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={onMenuToggle}
               className="md:hidden p-2 rounded-lg text-neutral-700 hover:bg-neutral-100 transition-colors flex-shrink-0"
@@ -128,7 +138,6 @@ export default function Header({ userRole, onMenuToggle, isMobileMenuOpen }: Hea
                 <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </button>
-            {/* Logo mobile - esconder em telas muito pequenas */}
             <img 
               src="/Logo.png" 
               alt="Beauty Sleep Logo" 
@@ -136,17 +145,23 @@ export default function Header({ userRole, onMenuToggle, isMobileMenuOpen }: Hea
             />
           </div>
           
-          {/* Busca Global - hidden on mobile, visible on desktop - centralizada no header */}
-          <div className="hidden md:flex flex-1 items-center justify-center min-w-0 max-w-2xl mx-4">
-            <div className="w-full max-w-md">
+          {/* Busca Global - centralizada, mesma largura do conteúdo; reduz com sidebar aberta; animação */}
+          <div className="hidden md:flex items-center min-w-0">
+            <div
+              className={cn(
+                "w-full min-w-0 mr-8 transition-[max-width] duration-300 ease-in-out",
+                isCollapsed ? "max-w-[48rem]" : "max-w-[34rem]"
+              )}
+            >
               <BuscaGlobal />
             </div>
           </div>
           
-          {/* Lado direito - notificações e menu do usuário */}
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 relative z-[10000] min-w-0" data-user-menu style={{ pointerEvents: 'auto' }}>
-            {/* Centro de Notificações */}
-            <NotificationCenter />
+          {/* Lado direito - notificação e perfil */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 justify-end pl-4 relative z-[10000]" data-user-menu style={{ pointerEvents: 'auto' }}>
+            <div className="shrink-0 ml-24">
+              <NotificationCenter />
+            </div>
             
             <div className="relative z-[10000]" style={{ pointerEvents: 'auto' }}>
               <button
