@@ -17,7 +17,13 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot', '@radix-ui/react-label'],
   },
   // Ignorar pastas de design/storybook e outros projetos durante o build
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Desabilitar cache do webpack em dev quando em pasta sincronizada (ex.: OneDrive)
+    // Evita ENOENT e "incorrect header check" por arquivos .pack.gz corrompidos
+    if (dev) {
+      config.cache = false
+    }
+
     // Configurar path aliases para Design System
     // NOTA: path.resolve() lida corretamente com espaços no nome da pasta no Linux (Vercel)
     const path = require('path')

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnboardingTour } from '@/components/OnboardingTour'
@@ -11,17 +11,19 @@ interface DashboardClientProps {
   userEmail: string | null
 }
 
-export default function DashboardClient({ userRole, userEmail }: DashboardClientProps) {
+function DashboardClientInner({ userRole, userEmail }: DashboardClientProps) {
   const [tourCompleted, setTourCompleted] = useState(true)
   const [userId, setUserId] = useState<string | undefined>()
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
-  const forceRefazerTour = searchParams.get('refazerTour') === '1'
-  const emailConfirmed = searchParams.get('email_confirmed')
-  const magicLinkLogin = searchParams.get('magic_link_login')
-  const showNotifications = searchParams.get('showNotifications') === 'true'
-  const tourFlow = searchParams.get('tourFlow') as 'admin' | 'equipe' | null
+  // Proteção contra searchParams null (ex.: cache corrompido / hidratação)
+  const get = (key: string) => (searchParams && typeof searchParams.get === 'function' ? searchParams.get(key) : null) ?? null
+  const forceRefazerTour = get('refazerTour') === '1'
+  const emailConfirmed = get('email_confirmed')
+  const magicLinkLogin = get('magic_link_login')
+  const showNotifications = get('showNotifications') === 'true'
+  const tourFlow = get('tourFlow') as 'admin' | 'equipe' | null
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -69,14 +71,12 @@ export default function DashboardClient({ userRole, userEmail }: DashboardClient
   // Iniciar tour de notificações quando solicitado
   useEffect(() => {
     if (showNotifications && userRole) {
-      const tourFlow = searchParams.get('tourFlow') as 'admin' | 'equipe' | null
-      if (!tourFlow) return
-      
-      // Aguardar um pouco para garantir que os elementos estejam renderizados
+      const flow = get('tourFlow') as 'admin' | 'equipe' | null
+      if (!flow) return
+
       const timer = setTimeout(() => {
-        // Importação dinâmica para evitar problemas de SSR
         import('@/components/OnboardingTour').then(({ startNotificationsTour }) => {
-          startNotificationsTour(userRole as 'admin' | 'equipe' | 'recepcao', tourFlow)
+          startNotificationsTour(userRole as 'admin' | 'equipe' | 'recepcao', flow)
         })
       }, 500)
 
@@ -106,6 +106,14 @@ export default function DashboardClient({ userRole, userEmail }: DashboardClient
         userId={userId}
       />
     </>
+  )
+}
+
+export default function DashboardClient(props: DashboardClientProps) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardClientInner {...props} />
+    </Suspense>
   )
 }
 

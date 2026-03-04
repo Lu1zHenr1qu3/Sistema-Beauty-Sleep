@@ -8,12 +8,17 @@
  */
 
 import * as React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { LogOut, User, Settings, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '../../utils/cn'
 import { Glass } from '../../components/glass/Glass'
 import NotificationCenter from '@/components/ui/NotificationCenter'
+
+/** Links externos (outros sites da rede) */
+const REDE_LINKS_EXTERNOS = [
+  { href: 'https://dash-unidades-bs.vercel.app', label: 'Beauty Smile Partners', external: true as const },
+]
 
 export interface MetricCardData {
   /**
@@ -219,6 +224,25 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
           .slice(0, 2)
       : 'U'
 
+  const redeLinks = REDE_LINKS_EXTERNOS
+  const [redeOpen, setRedeOpen] = useState(false)
+  const redeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (redeRef.current && !redeRef.current.contains(e.target as Node)) setRedeOpen(false)
+    }
+    if (redeOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [redeOpen])
+
+  // Fechar dropdown quando a sidebar for recolhida
+  useEffect(() => {
+    if (isCollapsed) setRedeOpen(false)
+  }, [isCollapsed])
+
   // Background baseado no role: admin usa imagem específica, não-admin usa outro background
   const backgroundImage = isAdmin 
     ? 'url(/68a4d045b130b34b3614881d.jpeg)'
@@ -245,46 +269,108 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
           'flex flex-col transform transition-all duration-300 ease-in-out',
           isCollapsed ? 'w-16' : 'w-64',
           isAdmin
-            ? 'bg-primary-900 text-white'
+            ? 'bg-primary-900 text-white border-r border-white/10'
             : 'bg-white text-neutral-900 border-r border-neutral-200'
         )}
       >
-        {/* Logo Section */}
+        {/* Logo Section: botão dropdown + botão recolher (botão na ponta direita) */}
         <div className={cn(
-          'flex items-center justify-center relative',
-          isCollapsed ? 'p-4' : 'p-6',
-          isAdmin ? 'border-b border-white/10' : 'border-b border-neutral-200'
+          'flex items-center justify-between gap-2 relative z-10 shrink-0',
+          isCollapsed ? 'py-2 pr-2 pl-1 justify-center' : 'py-6 pr-6 pl-4'
         )}>
-          {!isCollapsed ? (
-            <img
-              src="/beauty-smile-logo.svg"
-              alt="Beauty Smile"
+          <div
+            ref={redeRef}
+            className={cn(
+              'flex items-center justify-center gap-2 overflow-visible',
+              isCollapsed ? 'min-w-[2.5rem] flex-shrink-0' : 'flex-1 min-w-0'
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (isCollapsed) return
+                setRedeOpen((v) => !v)
+              }}
               className={cn(
-                "h-12 w-auto transition-opacity duration-300",
-                isAdmin ? "filter brightness-0 invert" : ""
+                'outline-none focus:outline-none flex items-center gap-2 overflow-visible',
+                isCollapsed ? 'flex-shrink-0' : 'min-w-0 flex-1'
               )}
-            />
-          ) : (
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img
-                src="/beauty-smile-icon.svg"
-                alt="Beauty Smile"
-                className={cn(
-                  "w-10 h-10 transition-all duration-300",
-                  isAdmin ? "filter brightness-0 invert" : ""
-                )}
-              />
-            </div>
-          )}
-          
-          {/* Toggle Button - Only on desktop */}
+              aria-expanded={redeOpen}
+              aria-haspopup="true"
+            >
+              {!isCollapsed ? (
+                <>
+                  <span className="flex-shrink-0">
+                    <img
+                      src="/beauty-smile-logo.svg"
+                      alt="Beauty Sleep"
+                      className={cn(
+                        'h-10 w-auto',
+                        isAdmin ? 'filter brightness-0 invert' : ''
+                      )}
+                    />
+                  </span>
+                  <span className="font-semibold truncate min-w-0 flex-1 text-left">
+                    <span className={isAdmin ? 'text-white' : 'text-neutral-900'}>Beauty Sleep</span>
+                  </span>
+                </>
+              ) : (
+                <img
+                  src="/beauty-smile-icon.svg"
+                  alt="Beauty Sleep"
+                  className={cn(
+                    'w-10 h-10 flex-shrink-0 min-w-[2.5rem] min-h-[2.5rem]',
+                    isAdmin ? 'filter brightness-0 invert' : ''
+                  )}
+                />
+              )}
+            </button>
+
+            {/* Dropdown Sites da rede - só quando sidebar expandida */}
+            {redeOpen && !isCollapsed && (
+              <div
+                className="absolute left-1/2 top-full z-[100] mt-1 w-52 -translate-x-1/2 rounded-lg border border-white/15 bg-[#0f172a] shadow-xl overflow-hidden"
+              >
+                <div className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-white/40 text-center">
+                  Sites da rede
+                </div>
+                <div className="py-1">
+                  {redeLinks.map((item) => (
+                    'external' in item && item.external ? (
+                      <a
+                        key={item.href + item.label}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full px-4 py-2.5 text-sm font-medium text-white/95 hover:bg-white/10 transition-colors whitespace-nowrap"
+                        onClick={() => setRedeOpen(false)}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        key={item.href + item.label}
+                        href={item.href}
+                        className="block w-full px-4 py-2.5 text-sm font-medium text-white/95 hover:bg-white/10 transition-colors whitespace-nowrap"
+                        onClick={() => setRedeOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Botão recolher/expandir - na ponta direita da sidebar (meio fora) */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
-              "absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow-lg hidden md:flex z-[70]",
+              'absolute -right-3 top-1/2 -translate-y-1/2 z-[20] w-6 h-6 rounded-full border-2 flex items-center justify-center shadow-lg hidden md:flex',
               isAdmin
-                ? "border-white/20 bg-primary-800 text-white hover:bg-primary-700"
-                : "border-neutral-300 bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                ? 'border-white/20 bg-primary-800 text-white hover:bg-primary-700'
+                : 'border-neutral-300 bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
             )}
             title={isCollapsed ? 'Expandir menu' : 'Colapsar menu'}
           >
@@ -298,7 +384,7 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
 
         {/* Navigation */}
         <nav className={cn(
-          'flex-1 space-y-2',
+          'flex-1 space-y-2 relative z-0 min-h-0 overflow-y-auto overflow-x-hidden',
           isCollapsed ? 'p-2' : 'p-4'
         )}>
           {navItems.map((item, index) => {
@@ -343,7 +429,6 @@ export const DashboardAdminTemplate: React.FC<DashboardAdminTemplateProps> = ({
         {/* User Section */}
         {userName && (
           <div className={cn(
-            isAdmin ? 'border-t border-white/10' : 'border-t border-neutral-200',
             isCollapsed ? 'p-2' : 'p-4'
           )}>
             {!isCollapsed ? (
