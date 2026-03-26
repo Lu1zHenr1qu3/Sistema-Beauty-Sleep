@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Minus, Calendar, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Plus, Minus, Calendar, AlertTriangle, CheckCircle, Pencil } from 'lucide-react'
 import { showSuccess, showError } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -36,10 +36,13 @@ export default function ResumoTratamento({
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showAddSessoesModal, setShowAddSessoesModal] = useState(false)
   const [showRemoveSessoesModal, setShowRemoveSessoesModal] = useState(false)
+  const [showEditCompradasModal, setShowEditCompradasModal] = useState(false)
   const [sessoesToAdd, setSessoesToAdd] = useState('')
   const [sessoesToRemove, setSessoesToRemove] = useState('')
+  const [sessoesCompradasToEdit, setSessoesCompradasToEdit] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
+  const [isEditingCompradas, setIsEditingCompradas] = useState(false)
 
   // Efeito para recálculo quando paciente muda
   useEffect(() => {
@@ -238,6 +241,56 @@ export default function ResumoTratamento({
     }
   }
 
+  const handleEditSessoesCompradas = async () => {
+    const quantidade = parseInt(sessoesCompradasToEdit)
+    if (isNaN(quantidade) || quantidade < 0) {
+      showError('Por favor, informe uma quantidade válida (0 ou maior)')
+      return
+    }
+
+    setIsEditingCompradas(true)
+
+    try {
+      const supabase = createClient()
+
+      const { error } = await supabase
+        .from('pacientes')
+        .update({
+          sessoes_compradas: quantidade,
+        })
+        .eq('id', paciente.id)
+        .select()
+
+      if (error) {
+        console.error('Erro ao editar sessões compradas:', error)
+        console.error('Erro completo:', JSON.stringify(error, null, 2))
+
+        let errorMessage = 'Erro ao editar sessões compradas. '
+        if (error.code === '42501') {
+          errorMessage += 'Você não tem permissão para editar sessões compradas. Verifique seu perfil de usuário.'
+        } else if (error.message) {
+          errorMessage += error.message
+        } else {
+          errorMessage += 'Tente novamente ou entre em contato com o suporte.'
+        }
+
+        showError(errorMessage)
+        setIsEditingCompradas(false)
+        return
+      }
+
+      showSuccess('Sessões compradas atualizadas com sucesso!')
+      setShowEditCompradasModal(false)
+      setSessoesCompradasToEdit('')
+      onPacienteUpdate?.()
+    } catch (error) {
+      console.error('Erro inesperado ao editar sessões compradas:', error)
+      showError('Erro inesperado ao editar sessões compradas')
+    } finally {
+      setIsEditingCompradas(false)
+    }
+  }
+
   return (
     <>
       <Card>
@@ -246,6 +299,17 @@ export default function ResumoTratamento({
             <CardTitle>Resumo de Tratamento</CardTitle>
             {canAddSessoes && (
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSessoesCompradasToEdit(String(paciente.sessoes_compradas || 0))
+                    setShowEditCompradasModal(true)
+                  }}
+                  leftIcon={<Pencil className="h-4 w-4" />}
+                >
+                  Editar Compradas
+                </Button>
                 {(paciente.sessoes_adicionadas || 0) > 0 && (
                   <Button
                     variant="outline"
@@ -418,6 +482,67 @@ export default function ResumoTratamento({
               Adicionar Sessões
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Sessões Compradas */}
+      <Dialog open={showEditCompradasModal} onOpenChange={setShowEditCompradasModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Editar Sessões Compradas</DialogTitle>
+            <DialogDescription>
+              Defina a quantidade total de sessões compradas para este paciente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="sessoes_compradas_editar">
+                Quantidade <span className="text-danger-600">*</span>
+              </Label>
+              <Input
+                id="sessoes_compradas_editar"
+                type="number"
+                min="0"
+                value={sessoesCompradasToEdit}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || /^\d+$/.test(value)) {
+                    setSessoesCompradasToEdit(value)
+                  }
+                }}
+                placeholder="Ex: 12"
+                disabled={isEditingCompradas}
+              />
+              <p className="text-xs text-gray-500">
+                Valor atual: {paciente.sessoes_compradas || 0}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-row justify-end gap-2 pt-4 border-t border-gray-200">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditCompradasModal(false)
+                setSessoesCompradasToEdit('')
+              }}
+              disabled={isEditingCompradas}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleEditSessoesCompradas}
+              isLoading={isEditingCompradas}
+              disabled={
+                isEditingCompradas ||
+                sessoesCompradasToEdit.trim() === '' ||
+                isNaN(parseInt(sessoesCompradasToEdit)) ||
+                parseInt(sessoesCompradasToEdit) < 0
+              }
+            >
+              Salvar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -116,4 +116,3 @@ export default function DashboardClient(props: DashboardClientProps) {
     </Suspense>
   )
 }
-
