@@ -218,17 +218,13 @@ export default function TabSessoes({ pacienteId, onSessionUpdate }: TabSessoesPr
   }
 
   const canEdit = (sessao: Sessao) => {
-    // Se ainda não carregou os dados do usuário, não permitir edição
-    if (!userRole || !userId) return false
-    if (userRole === 'admin') return true
-    if (userRole === 'equipe' && sessao.user_id === userId) return true
-    return false
+    if (!userRole) return false
+    return userRole === 'admin' || userRole === 'equipe'
   }
 
   const canDelete = (sessao: Sessao) => {
-    // Apenas admin pode deletar sessões
     if (!userRole) return false
-    return userRole === 'admin'
+    return userRole === 'admin' || userRole === 'equipe'
   }
   const canCreate = userRole === 'admin' || userRole === 'equipe'
 

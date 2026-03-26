@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { FileText, Download, Eye, Calendar, Filter } from 'lucide-react'
+import { FileText, Download, Eye, Calendar, Filter, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table'
@@ -209,6 +209,33 @@ export default function TabExames({ pacienteId }: TabExamesProps) {
   }
 
   const canDownloadPDF = userRole !== 'recepcao'
+  const canManageExames = userRole === 'admin' || userRole === 'equipe'
+
+  const handleDeleteExame = async (exame: Exame) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja deletar o exame de ${formatDate(exame.data_exame)}? Esta ação não pode ser desfeita.`
+    )
+    if (!confirmed) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('exames')
+        .delete()
+        .eq('id', exame.id)
+
+      if (error) {
+        console.error('Erro ao deletar exame:', error)
+        showError('Erro ao deletar exame. Verifique suas permissões.')
+        return
+      }
+
+      await fetchExames()
+    } catch (error) {
+      console.error('Erro inesperado ao deletar exame:', error)
+      showError('Erro inesperado ao deletar exame')
+    }
+  }
 
   return (
     <>
@@ -374,6 +401,17 @@ export default function TabExames({ pacienteId }: TabExamesProps) {
                               <Download className="h-4 w-4" />
                             </Button>
                           )}
+                          {canManageExames && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteExame(exame)}
+                              title="Deletar Exame"
+                              className="text-danger-600 hover:text-danger-700 hover:bg-danger-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -395,6 +433,7 @@ export default function TabExames({ pacienteId }: TabExamesProps) {
           }}
           exameId={selectedExame.id}
           canDownloadPDF={canDownloadPDF}
+          canEditExame={canManageExames}
         />
       )}
     </>

@@ -158,12 +158,6 @@ export default function ModalEditarSessao({ isOpen, onClose, sessao, onSuccess }
       return
     }
 
-    // Check if user can edit this sessão
-    if (userRole === 'equipe' && sessao.user_id !== userId) {
-      showError('Você não tem permissão para editar esta sessão. Apenas o criador ou um administrador pode editá-la.')
-      return
-    }
-
     setIsSubmitting(true)
     try {
       const supabase = createClient()
@@ -213,7 +207,7 @@ export default function ModalEditarSessao({ isOpen, onClose, sessao, onSuccess }
         
         let errorMessage = 'Erro ao editar sessão. '
         if (error.code === '42501') {
-          errorMessage += 'Você não tem permissão para editar esta sessão. Verifique se você é o criador da sessão ou um administrador.'
+          errorMessage += 'Você não tem permissão para editar esta sessão. Verifique seu perfil de usuário.'
         } else if (error.message) {
           errorMessage += error.message
         } else {

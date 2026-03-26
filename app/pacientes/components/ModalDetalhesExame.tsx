@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Download, Calendar, Scale, Ruler, Activity, Heart, FileText, Clock, Pill, AlertCircle, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { DateInput } from '@/components/ui/DateInput'
 import {
   Dialog,
   DialogContent,
@@ -90,6 +91,7 @@ interface ModalDetalhesExameProps {
   onClose: () => void
   exameId: string
   canDownloadPDF?: boolean
+  canEditExame?: boolean
 }
 
 export default function ModalDetalhesExame({
@@ -97,6 +99,7 @@ export default function ModalDetalhesExame({
   onClose,
   exameId,
   canDownloadPDF = true,
+  canEditExame = false,
 }: ModalDetalhesExameProps) {
   const [exame, setExame] = useState<Exame | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -390,9 +393,25 @@ export default function ModalDetalhesExame({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-start">
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-1.5">Data do Exame</p>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <p className="text-sm font-semibold text-gray-900">{formatDate(exame.data_exame)}</p>
+                  <div className="flex items-center gap-2 min-w-[220px]">
+                    <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <DateInput
+                      value={
+                        typeof editedData.data_exame === 'string'
+                          ? editedData.data_exame
+                          : exame.data_exame
+                      }
+                      onChange={(value) => {
+                        if (!canEditExame) return
+                        setEditedData((prev) => ({
+                          ...prev,
+                          data_exame: value,
+                        }))
+                      }}
+                      displayFormat="DD/MM/YYYY"
+                      placeholder="DD/MM/AAAA"
+                      disabled={!canEditExame || isSaving}
+                    />
                   </div>
                 </div>
                 <div>
@@ -457,6 +476,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('consumo_alcool')}
                         onChange={(e) => handleCheckboxChange('consumo_alcool', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -479,6 +499,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('congestao_nasal')}
                         onChange={(e) => handleCheckboxChange('congestao_nasal', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -501,6 +522,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('sedativos')}
                         onChange={(e) => handleCheckboxChange('sedativos', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -523,6 +545,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('placa_bruxismo')}
                         onChange={(e) => handleCheckboxChange('placa_bruxismo', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -545,6 +568,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('marcapasso')}
                         onChange={(e) => handleCheckboxChange('marcapasso', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -584,6 +608,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('cpap')}
                         onChange={(e) => handleCheckboxChange('cpap', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -606,6 +631,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('aparelho_avanco')}
                         onChange={(e) => handleCheckboxChange('aparelho_avanco', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -628,6 +654,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('terapia_posicional')}
                         onChange={(e) => handleCheckboxChange('terapia_posicional', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -650,6 +677,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('oxigenio')}
                         onChange={(e) => handleCheckboxChange('oxigenio', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -672,6 +700,7 @@ export default function ModalDetalhesExame({
                         type="checkbox"
                         checked={getCheckboxValue('suporte_ventilatorio')}
                         onChange={(e) => handleCheckboxChange('suporte_ventilatorio', e.target.checked)}
+                        disabled={!canEditExame || isSaving}
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
@@ -1167,7 +1196,7 @@ export default function ModalDetalhesExame({
                 ) : canDownloadPDF && (
                   <p className="text-sm text-gray-500 italic">PDF não disponível para este exame</p>
                 )}
-                {hasChanges() && (
+                {canEditExame && hasChanges() && (
                   <>
                     <Button 
                       variant="outline" 
