@@ -316,7 +316,139 @@ Certifique-se de que:
 
 ---
 
+## 📖 Guia das Páginas
+
+Descrição das telas principais do sistema (com base nas interfaces atuais).
+
+### Dashboard — Aba Geral (`/dashboard`)
+
+<img width="1061" height="949" alt="Dashboard Geral" src="https://github.com/user-attachments/assets/bde3c4d2-9041-4406-8645-0cbd2aace310" />
+
+<img width="1062" height="944" alt="Dashboard Geral - scroll" src="https://github.com/user-attachments/assets/051a102f-f002-44df-bc38-162411327ccd" />
+
+Visão geral operacional do sistema Beauty Sleep.
+
+- **KPIs:** Total de Pacientes, Leads para Converter, Exames Realizados e Taxa de Conversão
+- **Ações Pendentes:** quatro colunas — Leads sem Follow-up, Pacientes sem Sessão, Manutenção Atrasada e Completando Tratamento (clique abre o paciente)
+- **Exames Recentes:** tabela com paciente, data, tipo (Sono/Ronco), IDO (com badge Leve/Moderado), Score Ronco e “Ver Detalhes”
+- **Tempo Médio de Tratamento:** gráfico de barras do tempo médio (em dias) até a conclusão do tratamento, por categoria inicial de IDO (Normal, Leve, Moderado, Acentuado), com filtros de período e categoria
+
+### Dashboard — Aba Ronco
+
+<img width="1065" height="939" alt="Dashboard Ronco" src="https://github.com/user-attachments/assets/824ab59b-098e-44bb-97f2-0d52831a337a" />
+
+Foco em indicadores de ronco da base de pacientes.
+
+- Cards: **Score Médio de Ronco** e **Total de Pacientes com Ronco Alto**
+- **Distribuição de Ronco:** gráfico (Alto / Médio / Baixo)
+- **Tendência de Score de Ronco:** evolução do score médio ao longo do tempo
+- Tabela **Casos Críticos** (score elevado) com botão “Ver Paciente”
+
+### Dashboard — Aba Apneia
+
+<img width="1267" height="957" alt="Dashboard Apneia" src="https://github.com/user-attachments/assets/b126e43b-19c7-47b7-b60c-cb1f9c588915" />
+
+<img width="1268" height="945" alt="Dashboard Apneia - scroll" src="https://github.com/user-attachments/assets/09995723-5b80-425d-ac1c-01d676b06806" />
+
+Visão clínica de apneia, com filtro de período (ex.: últimos 90 dias).
+
+- Cards: **IDO Médio**, **Casos Críticos** e **SpO2 Médio**
+- **Distribuição por Categoria IDO** (Normal → Acentuado)
+- **Tendência de IDO e SpO2** (gráfico de linhas)
+- Tabela **Top 10 Melhorias (IDO):** IDO inicial/final, % de melhora e “Ver Paciente”
+- Tabela **Casos Críticos (IDO Acentuado):** IDO, SpO2 mínimo e data do exame
+
+### Pacientes — Lista (`/pacientes`)
+
+<img width="1255" height="952" alt="Lista de Pacientes" src="https://github.com/user-attachments/assets/29c1dd99-dd03-462b-86b4-5b062054240c" />
+
+Tela para gerenciar todos os pacientes do sistema.
+
+- Busca por nome ou CPF
+- Botão **+ Novo Paciente** e **Filtros Avançados**
+- Tabela: Nome, CPF, Status (Lead / Ativo / Finalizado / Inativo), Adesão %, Último Exame
+- Ações: **Ver Detalhes** (abre o perfil) e exclusão (ícone de lixeira)
+
+### Pacientes — Perfil (`/pacientes/[id]`)
+
+<img width="1266" height="956" alt="Visao geral" src="https://github.com/user-attachments/assets/66ee84c7-2df2-4fa5-bfcc-5a6cd3cc7798" />
+
+
+Prontuário do paciente com dados cadastrais e resumo do tratamento.
+
+- Cabeçalho: nome, status, gênero/idade, CPF, email, telefone, nascimento
+- Tags, Observações Gerais e ações: Nova Sessão, Adicionar Nota, Editar Paciente
+- **Resumo de Tratamento:** sessões compradas, adicionadas, utilizadas e disponíveis + barra de adesão
+- Abas: Exames, Sessões, Evolução, Peso/IMC, Notas e Histórico
+
+### Perfil do Paciente — Aba Exames
+
+<img width="1268" height="948" alt="Aba Exames" src="https://github.com/user-attachments/assets/3d6d4a77-eb07-4f82-8132-4b131b157cf0" />
+
+Histórico de exames Biologix do paciente.
+
+- Filtros por tipo e intervalo de datas
+- Tabela: Data (badge “Novo” em exames recentes), Tipo, Status, IDO com classificação (Leve/Moderado/etc.) e Score Ronco
+- Ações por exame: visualizar, baixar PDF e excluir
+
+### Perfil do Paciente — Aba Sessões
+
+<img width="1268" height="948" alt="Aba Sessões" src="https://github.com/user-attachments/assets/46f26fdf-8101-4789-9f8f-96372128753f" />
+
+Registro das sessões de tratamento a laser.
+
+- Botão **+ Nova Sessão** e filtro por data
+- Tabela: Data, Protocolo (ex.: Combinado), Pulsos, Dentista
+- Ações: editar e excluir sessão
+
+### Perfil do Paciente — Aba Evolução
+
+<img width="979" height="956" alt="Aba Evolução" src="https://github.com/user-attachments/assets/c0874b30-3956-493c-9f73-d0c5f7284d1a" />
+
+<img width="979" height="956" alt="Aba Evolução - comparações" src="https://github.com/user-attachments/assets/ea8300a9-0fa6-4aa9-b0fb-29490cafb563" />
+
+Acompanhamento da evolução clínica ao longo dos exames.
+
+- Filtro de período (Todo o Período / 12 meses / 6 meses)
+- Seleção de métrica (IDO, SpO2, dessaturações, carga hipóxica, frequência cardíaca, etc.)
+- Gráfico de linha da métrica escolhida
+- Cards **Pior → Melhor** com percentual de evolução
+- Comparações: **Primeiro vs Último Exame** e **Pior vs Melhor Exame (baseado em IDO)**
+
+### Perfil do Paciente — Aba Peso/IMC
+
+<img width="985" height="957" alt="Aba Peso/IMC" src="https://github.com/user-attachments/assets/438c0a89-b00c-4172-90e3-eab69e45a9ac" />
+
+Acompanhamento de peso e índice de massa corporal.
+
+- Gráfico de evolução do peso (kg)
+- Gráfico de evolução do IMC
+- Comparação **Inicial vs Atual** (mudança absoluta e percentual, com classificação do IMC)
+
+### Alertas (`/alertas`)
+
+<img width="983" height="958" alt="Alertas" src="https://github.com/user-attachments/assets/930765f4-064c-4f6d-90fa-e1e5e16c4726" />
+
+Fila de alertas clínicos e operacionais do sistema.
+
+- Filtros e seleção em lote (“Selecionar todos”)
+- Cards com título (ex.: Piora de IDO, Fibrilação Atrial, SpO2 Crítico, IDO Acentuado), status Pendente, tipo, urgência, data e paciente
+- Ações: **Ver Paciente** e **Marcar como Resolvido**
+
+### Logs de Auditoria (`/logs`) — Admin
+
+<img width="953" height="949" alt="Logs de Auditoria" src="https://github.com/user-attachments/assets/47f0ec41-b850-4c56-afab-16d3c73f264b" />
+
+<img width="990" height="957" alt="Detalhe do Log" src="https://github.com/user-attachments/assets/14f6e928-5139-415f-8ef2-e7357c97b0c7" />
+
+Histórico de ações realizadas no sistema.
+
+- Filtros (usuário, entidade, ação, data) e botão Atualizar
+- Tabela: Data/Hora, Usuário (inclui “Sistema”), Ação (Criar/Atualizar), Entidade, ID e resumo
+- **Detalhe do log (`/logs/[id]`):** mostra ação, entidade, usuário e todos os campos criados/alterados (ex.: criação de paciente via Biologix)
+
+---
+
 **Versão**: 1.0.0  
 **Última atualização**: Dezembro 2025  
 **Repositório**: [https://github.com/fercosnt/Sistema-Beauty-Sleep](https://github.com/fercosnt/Sistema-Beauty-Sleep)
-
